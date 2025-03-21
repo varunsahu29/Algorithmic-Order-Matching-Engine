@@ -1,0 +1,19 @@
+cmake_minimum_required(VERSION 3.14)
+project(OrderBookProject)
+
+set(CMAKE_CXX_STANDARD 20)
+
+# Add include directory
+include_directories(include)
+
+# Order book source files
+add_executable(orderbook
+    src/main.cpp
+    src/order.cpp
+    src/order_book.cpp
+    src/utils.cpp
+)
+
+# Add GoogleTest
+enable_testing()
+add_subdirectory(test)
