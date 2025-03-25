@@ -15,17 +15,16 @@
 class Orderbook
 {
 private:
-
     struct OrderEntry
     {
-        OrderPointer order_{ nullptr };
+        OrderPointer order_{nullptr};
         OrderPointers::iterator location_;
     };
 
     struct LevelData
     {
-        Quantity quantity_{ };
-        Quantity count_{ };
+        Quantity quantity_{};
+        Quantity count_{};
 
         enum class Action
         {
@@ -42,16 +41,25 @@ private:
     mutable std::mutex ordersMutex_;
     std::thread ordersPruneThread_;
     std::condition_variable shutdownConditionVariable_;
-    std::atomic<bool> shutdown_{ false };
+    std::atomic<bool> shutdown_{false};
 
     void PruneGoodForDayOrders();
 
     void CancelOrders(OrderIds orderIds);
     void CancelOrderInternal(OrderId orderId);
 
-    void OnOrderCancelled(OrderPointer order);
-    void OnOrderAdded(OrderPointer order);
-    void OnOrderMatched(Price price, Quantity quantity, bool isFullyFilled);
+    void OnOrderCancelled(OrderPointer order)
+    {
+        UpdateLevelData(order->GetPrice(), order->GetRemainingQuantity(), LevelData::Action::Remove);
+    };
+    void OnOrderAdded(OrderPointer order)
+    {
+        UpdateLevelData(order->GetPrice(), order->GetInitialQuantity(), LevelData::Action::Add);
+    };
+    void OnOrderMatched(Price price, Quantity quantity, bool isFullyFilled)
+    {
+        UpdateLevelData(price, quantity, isFullyFilled ? LevelData::Action::Remove : LevelData::Action::Match);
+    };
     void UpdateLevelData(Price price, Quantity quantity, LevelData::Action action);
 
     bool CanFullyFill(Side side, Price price, Quantity quantity) const;
@@ -59,12 +67,11 @@ private:
     Trades MatchOrders();
 
 public:
-
     Orderbook();
-    Orderbook(const Orderbook&) = delete; // no copy
-    void operator=(const Orderbook&) = delete; // no copy assignment
-    Orderbook(Orderbook&&) = delete; // no move
-    void operator=(Orderbook&&) = delete;  // no move assignment
+    Orderbook(const Orderbook &) = delete;      // no copy
+    void operator=(const Orderbook &) = delete; // no copy assignment
+    Orderbook(Orderbook &&) = delete;           // no move
+    void operator=(Orderbook &&) = delete;      // no move assignment
     ~Orderbook();
 
     Trades AddOrder(OrderPointer order);
